@@ -10,12 +10,12 @@ import (
 func (i *impl) CreateUser(ctx context.Context, newUser entity.User) (entity.User, error) {
 
 	// validate persistence connection
-	if i.adapter.PesistYmirBlog == nil {
+	if i.adapter.PersistYmirBlog == nil {
 		return newUser, errors.New("ymir blog persistence connection is nil")
 	}
 
 	//create user
-	entUser, err := i.adapter.PesistYmirBlog.User.Create().
+	entUser, err := i.adapter.PersistYmirBlog.User.Create().
 		SetName(newUser.Name).
 		SetEmail(newUser.Email).
 		Save(ctx)

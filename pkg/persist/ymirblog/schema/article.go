@@ -24,5 +24,5 @@ func (Article) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("user", User.Type).Ref("articles").Unique(),
 		edge.From("tags", Tag.Type).Ref("articles"),
-	}	
+	}
 }
