@@ -2,7 +2,6 @@
 package rest
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -39,40 +38,21 @@ type ResponseUser struct {
 // Create User handler
 func (u *User) CreateUser(w http.ResponseWriter, r *http.Request) (ResponseUser, error) {
 
-	var newUser entity.User
-	err := json.NewDecoder(r.Body).Decode(&newUser)
+	request := entity.User{}
+	b, err := rest.Bind[entity.User](r, &request)
 	if err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
-		return ResponseUser{
-			Message: "Invalid request payload",
-		}, err
+		return ResponseUser{}, rest.ErrBadRequest(w, r, err)
 	}
-
-	//validation user name
-	if newUser.Name == "" {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
-		return ResponseUser{
-			Message: "user name is empty",
-		}, err
-
-	}
-
-	//validation user email
-	if newUser.Email == "" {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
-		return ResponseUser{
-			Message: "user email is empty",
-		}, err
-
+	if err = b.Validate(); err != nil {
+		return ResponseUser{}, rest.ErrBadRequest(w, r, err)
 	}
 
 	//create user
-	user, err := u.UserUsecase.CreateUser(r.Context(), newUser)
+	user, err := u.UserUsecase.CreateUser(r.Context(), request)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
 		return ResponseUser{
 			Message: err.Error(),
-		}, err
+		}, rest.ErrBadRequest(w, r, err)
 	}
 
 	return ResponseUser{
