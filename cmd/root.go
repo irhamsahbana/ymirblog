@@ -25,7 +25,8 @@ import (
 	"gitlab.playcourt.id/dedenurr12/ymirblog/pkg/ports/rest"
 	"gitlab.playcourt.id/dedenurr12/ymirblog/pkg/shared"
 	usercase "gitlab.playcourt.id/dedenurr12/ymirblog/pkg/usecase"
-	usercaseUser "gitlab.playcourt.id/dedenurr12/ymirblog/pkg/usecase/user"
+	usecaseUser "gitlab.playcourt.id/dedenurr12/ymirblog/pkg/usecase/user"
+	usecaseArticle "gitlab.playcourt.id/dedenurr12/ymirblog/pkg/usecase/article"
 	"gitlab.playcourt.id/dedenurr12/ymirblog/pkg/version"
 )
 
@@ -127,11 +128,17 @@ func (r *rootOptions) runServer(_ *cobra.Command, _ []string) error {
 		ymirblog.WithTxIsolationLevel(sql.LevelSerializable),
 	)
 
-	adaptor.PesistYmirBlog = dbYmirBlog
+	adaptor.PersistYmirBlog = dbYmirBlog
 
 
 	// create usercase instance 
-	userUsecase, err := usercase.Get[usercaseUser.T](adaptor)
+	userUsecase, err := usercase.Get[usecaseUser.T](adaptor)
+	if err != nil {
+		return err
+	}
+
+	// create usercase instance 
+	articleUsecase, err := usercase.Get[usecaseArticle.T](adaptor)
 	if err != nil {
 		return err
 	}
@@ -151,6 +158,12 @@ func (r *rootOptions) runServer(_ *cobra.Command, _ []string) error {
 				DB: dbYmirBlog,
 			}
 			restMI.Register(c)
+
+			restArticle := &restApi.Article{
+				UcArticle: articleUsecase,
+				DB: dbYmirBlog,
+			}
+			restArticle.Register(c)
 
 			return c
 		},
