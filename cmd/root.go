@@ -127,6 +127,7 @@ func (r *rootOptions) runServer(_ *cobra.Command, _ []string) error {
 		ymirblog.WithTxIsolationLevel(sql.LevelSerializable),
 	)
 
+	adaptor.PesistYmirBlog = dbYmirBlog
 
 
 	// create usercase instance 

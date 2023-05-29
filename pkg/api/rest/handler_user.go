@@ -58,7 +58,7 @@ func (u *User) CreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//create user
-	user, err := u.UserUsecase.CreateUser(r.Context(), u.DB, newUser)
+	user, err := u.UserUsecase.CreateUser(r.Context(), newUser)
 	if err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
