@@ -27,55 +27,58 @@ func (u *User) Register(router chi.Router) {
 	router.Get("/hello-csv", rest.HandlerAdapter(u.UserCSV).CSV)
 
 	// create handler for create user POST
-	router.Post("/user/create", u.CreateUser)
+	router.Post("/user/create", rest.HandlerAdapter(u.CreateUser).JSON)
 }
 
 // ResponseUser User handler response. /** PLEASE EDIT THIS EXAMPLE, return handler response */.
 type ResponseUser struct {
 	Message string
+	User    entity.User
 }
 
 // Create User handler
-func (u *User) CreateUser(w http.ResponseWriter, r *http.Request) {
+func (u *User) CreateUser(w http.ResponseWriter, r *http.Request) (ResponseUser, error) {
 
 	var newUser entity.User
 	err := json.NewDecoder(r.Body).Decode(&newUser)
 	if err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
-		return
+		return ResponseUser{
+			Message: "Invalid request payload",
+		}, err
 	}
 
 	//validation user name
 	if newUser.Name == "" {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
-		return
+		return ResponseUser{
+			Message: "user name is empty",
+		}, err
+
 	}
 
 	//validation user email
 	if newUser.Email == "" {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
-		return
+		return ResponseUser{
+			Message: "user email is empty",
+		}, err
+
 	}
 
 	//create user
 	user, err := u.UserUsecase.CreateUser(r.Context(), newUser)
 	if err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
-		return
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return ResponseUser{
+			Message: err.Error(),
+		}, err
 	}
 
-	userJSON, err := json.Marshal(user)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	// Set the response headers
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-
-	// Write the user JSON data to the response
-	w.Write(userJSON)
+	return ResponseUser{
+		Message: "success",
+		User:    user,
+	}, nil
 
 }
 
