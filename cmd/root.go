@@ -4,24 +4,28 @@ package cmd
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"net/http"
 	"strconv"
-	"entgo.io/ent/dialect"
-"database/sql"	
 
-    	"github.com/fatih/color"
-    	"github.com/go-chi/chi/v5"
+	"entgo.io/ent/dialect"
+
+	"github.com/fatih/color"
+	"github.com/go-chi/chi/v5"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 
-	"gitlab.playcourt.id/dedenurr12/ymirblog/pkg/persist/ymirblog"
 	"gitlab.playcourt.id/dedenurr12/ymirblog/pkg/adapters"
+	restApi "gitlab.playcourt.id/dedenurr12/ymirblog/pkg/api/rest"
 	"gitlab.playcourt.id/dedenurr12/ymirblog/pkg/infrastructure"
+	"gitlab.playcourt.id/dedenurr12/ymirblog/pkg/persist/ymirblog"
 	"gitlab.playcourt.id/dedenurr12/ymirblog/pkg/ports/rest"
 	"gitlab.playcourt.id/dedenurr12/ymirblog/pkg/shared"
+	usercase "gitlab.playcourt.id/dedenurr12/ymirblog/pkg/usecase"
+	usercaseUser "gitlab.playcourt.id/dedenurr12/ymirblog/pkg/usecase/user"
 	"gitlab.playcourt.id/dedenurr12/ymirblog/pkg/version"
 )
 
@@ -103,23 +107,33 @@ func (r *rootOptions) runServer(_ *cobra.Command, _ []string) error {
 	/**
 	* Initialize Main
 	*/
-d := infrastructure.Envs.YmirBlogMySQL
-    adaptor := &adapters.Adapter{}
-	adaptor.Sync(
-		adapters.WithYmirBlogMySQL(&adapters.YmirBlogMySQL{
-			NetworkDB: adapters.NetworkDB{
-				Database: d.Database,
-				User:d.User,
-				Password: d.Password,
-				Host: d.Host,
-				Port: d.Port,
-			},
-		}),
-) // adapters init
-_ = ymirblog.Driver(
+	d := infrastructure.Envs.YmirBlogMySQL
+		adaptor := &adapters.Adapter{}
+		adaptor.Sync(
+			adapters.WithYmirBlogMySQL(&adapters.YmirBlogMySQL{
+				NetworkDB: adapters.NetworkDB{
+					Database: d.Database,
+					User:d.User,
+					Password: d.Password,
+					Host: d.Host,
+					Port: d.Port,
+				},
+			}),
+	) // adapters init
+
+	// create persistance instance
+	dbYmirBlog := ymirblog.Driver(
 		ymirblog.WithDriver(adaptor.YmirBlogMySQL, dialect.MySQL),
 		ymirblog.WithTxIsolationLevel(sql.LevelSerializable),
 	)
+
+
+
+	// create usercase instance 
+	userUsecase, err := usercase.Get[usercaseUser.T](adaptor)
+	if err != nil {
+		return err
+	}
 
     var errCh chan error
 	/**
@@ -131,6 +145,12 @@ _ = ymirblog.Driver(
 	h.Handler(rest.Routes().Register(
 		func(c chi.Router) http.Handler {
 		    // http register handler
+			restMI := &restApi.User{
+				UserUsecase: userUsecase,
+				DB: dbYmirBlog,
+			}
+			restMI.Register(c)
+
 			return c
 		},
 	))

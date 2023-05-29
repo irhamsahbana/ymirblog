@@ -2,10 +2,12 @@ package user
 
 import (
 	"context"
+
 	"reflect"
 
 	"gitlab.playcourt.id/dedenurr12/ymirblog/pkg/adapters"
 	"gitlab.playcourt.id/dedenurr12/ymirblog/pkg/entity"
+	"gitlab.playcourt.id/dedenurr12/ymirblog/pkg/persist/ymirblog"
 	"gitlab.playcourt.id/dedenurr12/ymirblog/pkg/usecase"
 )
 
@@ -21,7 +23,7 @@ func init() {
 
 // T is the interface implemented by all user Component implementations.
 type T interface {
-	CreateUser(ctx context.Context, newUser entity.User) (entity.User, error)
+	CreateUser(ctx context.Context, DB *ymirblog.Database, newUser entity.User) (entity.User, error)
 }
 
 type impl struct {
@@ -29,7 +31,7 @@ type impl struct {
 }
 
 // Init initializes the execution of a process involved in a user Component usecase.
-func (i *impl) Init(ctx context.Context, adapter *adapters.Adapter) error {
+func (i *impl) Init(adapter *adapters.Adapter) error {
 	i.adapter = adapter
 	return nil
 }

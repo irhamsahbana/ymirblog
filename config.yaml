@@ -16,6 +16,6 @@ DB:
   max_idle_cons: 1
 
 Telemetry:
-  collector_enable: true
+  collector_enable: false
   collector_debug: false
   collector_grpc_addr: localhost:4317
