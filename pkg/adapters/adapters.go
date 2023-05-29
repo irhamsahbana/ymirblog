@@ -10,6 +10,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"github.com/go-resty/resty/v2"
 	"github.com/rs/zerolog/log"
+	"gitlab.playcourt.id/dedenurr12/ymirblog/pkg/persist/ymirblog"
 )
 
 type client interface {
@@ -26,6 +27,7 @@ type Driver[T client] interface {
 // Adapter components for external sources.
 type Adapter struct {
 	YmirBlogMySQL *sql.Driver
+	PesistYmirBlog *ymirblog.Database
 }
 
 // Option is Adapter type return func.
