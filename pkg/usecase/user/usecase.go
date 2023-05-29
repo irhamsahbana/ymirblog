@@ -9,9 +9,9 @@ import (
 
 func (i *impl) CreateUser(ctx context.Context, newUser entity.User) (entity.User, error) {
 
-	// validate db connection
+	// validate persistence connection
 	if i.adapter.PesistYmirBlog == nil {
-		return newUser, errors.New("db connection is nil")
+		return newUser, errors.New("ymir blog persistence connection is nil")
 	}
 
 	//create user
