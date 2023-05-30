@@ -25,7 +25,18 @@ func (a *Article) Register(router chi.Router) {
 
 // GetAllArticle Handler
 func (a *Article) GetAllArticle(w http.ResponseWriter, r *http.Request) ([]*entity.Article, error) {
-	res, err := a.UcArticle.GetAll(r.Context())
+	var (
+		request entity.RequestGetArticles
+	)
+	b, err := rest.Bind(r, &request)
+	if err != nil {
+		return []*entity.Article{}, rest.ErrBadRequest(w, r, err)
+	}
+	if err := b.Validate(); err != nil {
+		return []*entity.Article{}, rest.ErrBadRequest(w, r, err)
+	}
+
+	res, err := a.UcArticle.GetAll(r.Context(), r, request)
 	if err != nil {
 		return []*entity.Article{}, err
 	}
