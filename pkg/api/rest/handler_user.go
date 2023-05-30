@@ -2,7 +2,6 @@
 package rest
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -27,55 +26,39 @@ func (u *User) Register(router chi.Router) {
 	router.Get("/hello-csv", rest.HandlerAdapter(u.UserCSV).CSV)
 
 	// create handler for create user POST
-	router.Post("/user/create", u.CreateUser)
+	router.Post("/user/create", rest.HandlerAdapter(u.CreateUser).JSON)
 }
 
 // ResponseUser User handler response. /** PLEASE EDIT THIS EXAMPLE, return handler response */.
 type ResponseUser struct {
 	Message string
+	User    entity.User
 }
 
 // Create User handler
-func (u *User) CreateUser(w http.ResponseWriter, r *http.Request) {
+func (u *User) CreateUser(w http.ResponseWriter, r *http.Request) (ResponseUser, error) {
 
-	var newUser entity.User
-	err := json.NewDecoder(r.Body).Decode(&newUser)
+	request := entity.User{}
+	b, err := rest.Bind[entity.User](r, &request)
 	if err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
-		return
+		return ResponseUser{}, rest.ErrBadRequest(w, r, err)
 	}
-
-	//validation user name
-	if newUser.Name == "" {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
-		return
-	}
-
-	//validation user email
-	if newUser.Email == "" {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
-		return
+	if err = b.Validate(); err != nil {
+		return ResponseUser{}, rest.ErrBadRequest(w, r, err)
 	}
 
 	//create user
-	user, err := u.UserUsecase.CreateUser(r.Context(), newUser)
+	user, err := u.UserUsecase.CreateUser(r.Context(), request)
 	if err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
-		return
+		return ResponseUser{
+			Message: err.Error(),
+		}, rest.ErrBadRequest(w, r, err)
 	}
 
-	userJSON, err := json.Marshal(user)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	// Set the response headers
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-
-	// Write the user JSON data to the response
-	w.Write(userJSON)
+	return ResponseUser{
+		Message: "success",
+		User:    user,
+	}, nil
 
 }
 
