@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"gitlab.playcourt.id/dedenurr12/ymirblog/pkg/entity"
-	"gitlab.playcourt.id/dedenurr12/ymirblog/pkg/persist/ymirblog/ent"
 	"gitlab.playcourt.id/dedenurr12/ymirblog/pkg/ports/rest"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -35,7 +34,6 @@ func (i *impl) GetAll(ctx context.Context, r *http.Request, request entity.Reque
 	items, err := query.
 		Limit(request.Limit).
 		Offset(offset).
-		Order(ent.Desc(item.FieldCreatedAt)).
 		All(ctx)
 	if err != nil {
 		return []*entity.Article{}, err
