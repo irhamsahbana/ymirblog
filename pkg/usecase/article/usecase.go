@@ -2,15 +2,16 @@ package article
 
 import (
 	"context"
-	"net/http"
 
 	"gitlab.playcourt.id/dedenurr12/ymirblog/pkg/entity"
+	"gitlab.playcourt.id/dedenurr12/ymirblog/pkg/persist/ymirblog/ent/article"
+	"gitlab.playcourt.id/dedenurr12/ymirblog/pkg/persist/ymirblog/ent/user"
 	"gitlab.playcourt.id/dedenurr12/ymirblog/pkg/ports/rest"
 	"go.opentelemetry.io/otel/trace"
 )
 
 // GetAll returns resource pokemon api.
-func (i *impl) GetAll(ctx context.Context, r *http.Request, request entity.RequestGetArticles) ([]*entity.Article, error) {
+func (i *impl) GetAll(ctx context.Context, request entity.RequestGetArticles) ([]*entity.Article, rest.Pagination, error) {
 	span := trace.SpanFromContext(ctx)
 	defer span.End()
 	// l := log.Hook(tracer.TraceContextHook(ctx))
@@ -18,17 +19,24 @@ func (i *impl) GetAll(ctx context.Context, r *http.Request, request entity.Reque
 	client := i.adapter.PersistYmirBlog
 	query := client.Article.Query()
 
+	if request.Title != nil {
+		query = query.Where(article.TitleContains(*request.Title))
+	}
+
+	if request.UserID != nil {
+		query = query.Where(article.HasUserWith(user.IDEQ(*request.UserID)))
+	}
+
 	// pagination
 	total, err := query.Count(ctx)
 	if err != nil {
-		return []*entity.Article{}, err
+		return []*entity.Article{}, rest.Pagination{}, err
 	}
-
-	rest.Paging(r, rest.Pagination{
+	metadata := rest.Pagination{
 		Page:  request.Page,
 		Limit: request.Limit,
 		Total: total,
-	})
+	}
 
 	offset := (request.Page - 1) * request.Limit
 	items, err := query.
@@ -36,7 +44,7 @@ func (i *impl) GetAll(ctx context.Context, r *http.Request, request entity.Reque
 		Offset(offset).
 		All(ctx)
 	if err != nil {
-		return []*entity.Article{}, err
+		return []*entity.Article{}, metadata, err
 	}
 
 	res := []*entity.Article{}
@@ -48,5 +56,5 @@ func (i *impl) GetAll(ctx context.Context, r *http.Request, request entity.Reque
 		res = append(res, &entityArticle)
 	}
 
-	return res, nil
+	return res, metadata, nil
 }

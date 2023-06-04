@@ -3,11 +3,11 @@ package article
 
 import (
 	"context"
-	"net/http"
 	"reflect"
 
 	"gitlab.playcourt.id/dedenurr12/ymirblog/pkg/adapters"
 	"gitlab.playcourt.id/dedenurr12/ymirblog/pkg/entity"
+	"gitlab.playcourt.id/dedenurr12/ymirblog/pkg/ports/rest"
 	"gitlab.playcourt.id/dedenurr12/ymirblog/pkg/usecase"
 )
 
@@ -23,7 +23,7 @@ func init() {
 
 // T is the interface implemented by all article Component implementations.
 type T interface {
-	GetAll(ctx context.Context, r *http.Request, request entity.RequestGetArticles) ([]*entity.Article, error)
+	GetAll(ctx context.Context, request entity.RequestGetArticles) ([]*entity.Article, rest.Pagination, error)
 }
 
 type impl struct {
