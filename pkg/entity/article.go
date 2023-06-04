@@ -16,7 +16,8 @@ type Article struct {
 }
 
 type RequestGetArticles struct {
-	Name  *string
-	Limit int `validate:"gte=0,default=10"`
-	Page  int `validate:"gte=0,default=1"`
+	Title  *string
+	UserID *int `json:"userID"`
+	Limit  int  `validate:"gte=0,default=10"`
+	Page   int  `validate:"gte=0,default=1"`
 }

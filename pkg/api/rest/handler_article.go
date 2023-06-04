@@ -36,9 +36,16 @@ func (a *Article) GetAllArticle(w http.ResponseWriter, r *http.Request) ([]*enti
 		return []*entity.Article{}, rest.ErrBadRequest(w, r, err)
 	}
 
-	res, err := a.UcArticle.GetAll(r.Context(), r, request)
+	res, metadata, err := a.UcArticle.GetAll(r.Context(), request)
 	if err != nil {
 		return []*entity.Article{}, err
 	}
+
+	rest.Paging(r, rest.Pagination{
+		Page:  metadata.Page,
+		Limit: metadata.Limit,
+		Total: metadata.Total,
+	})
+
 	return res, nil
 }
