@@ -3,10 +3,13 @@ package article
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 
+	"entgo.io/ent/dialect"
 	"gitlab.playcourt.id/dedenurr12/ymirblog/pkg/adapters"
 	"gitlab.playcourt.id/dedenurr12/ymirblog/pkg/entity"
+	"gitlab.playcourt.id/dedenurr12/ymirblog/pkg/persist/ymirblog"
 	"gitlab.playcourt.id/dedenurr12/ymirblog/pkg/ports/rest"
 	"gitlab.playcourt.id/dedenurr12/ymirblog/pkg/usecase"
 )
@@ -34,4 +37,19 @@ type impl struct {
 func (i *impl) Init(adapter *adapters.Adapter) error {
 	i.adapter = adapter
 	return nil
+}
+
+func WithYmirBlogPersist() adapters.Option {
+	return func(a *adapters.Adapter) {
+		// adapter conduit sqlite
+		if a.YmirBlogMySQL == nil {
+			panic(fmt.Errorf("%s is not found", "YmirBlogMySQL"))
+		}
+		// persist conduit driver
+		var c = ymirblog.Driver(
+			ymirblog.WithDriver(a.YmirBlogMySQL, dialect.MySQL),
+		)
+
+		a.PersistYmirBlog = c
+	}
 }
