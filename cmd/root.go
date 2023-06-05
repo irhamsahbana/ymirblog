@@ -25,8 +25,8 @@ import (
 	"gitlab.playcourt.id/dedenurr12/ymirblog/pkg/ports/rest"
 	"gitlab.playcourt.id/dedenurr12/ymirblog/pkg/shared"
 	usercase "gitlab.playcourt.id/dedenurr12/ymirblog/pkg/usecase"
-	usecaseUser "gitlab.playcourt.id/dedenurr12/ymirblog/pkg/usecase/user"
 	usecaseArticle "gitlab.playcourt.id/dedenurr12/ymirblog/pkg/usecase/article"
+	usecaseUser "gitlab.playcourt.id/dedenurr12/ymirblog/pkg/usecase/user"
 	"gitlab.playcourt.id/dedenurr12/ymirblog/pkg/version"
 )
 
@@ -120,7 +120,9 @@ func (r *rootOptions) runServer(_ *cobra.Command, _ []string) error {
 					Port: d.Port,
 				},
 			}),
-	) // adapters init
+			usecaseUser.WithYmirBlogPersist(),
+			usecaseArticle.WithYmirBlogPersist(),
+			) // adapters init
 
 	// create persistance instance
 	dbYmirBlog := ymirblog.Driver(

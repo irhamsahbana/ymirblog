@@ -89,9 +89,11 @@ func Driver(cfg ...func(database *Database)) *Database {
 	}
 
 	options := []schema.MigrateOption{
-		schema.WithDir(dir),
-		schema.WithDropColumn(true),
-		schema.WithDropIndex(true),
+        schema.WithDir(dir),
+        schema.WithMigrationMode(schema.ModeReplay), // provide migration mode
+        schema.WithDialect(db.dialect),
+        schema.WithDropColumn(true),
+        schema.WithDropIndex(true),
 	}
 	ctx := context.Background()
 	if err = db.Client.Schema.Create(ctx, options...); err != nil {
