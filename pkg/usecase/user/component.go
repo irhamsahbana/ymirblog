@@ -40,11 +40,11 @@ func (i *impl) Init(adapter *adapters.Adapter) error {
 
 func WithYmirBlogPersist() adapters.Option {
 	return func(a *adapters.Adapter) {
-		// adapter conduit sqlite
+		// adapter ymirblog sqlite
 		if a.YmirBlogMySQL == nil {
 			panic(fmt.Errorf("%s is not found", "YmirBlogMySQL"))
 		}
-		// persist conduit driver
+		// persist ymirblog driver
 		var c = ymirblog.Driver(
 			ymirblog.WithDriver(a.YmirBlogMySQL, dialect.MySQL),
 		)
