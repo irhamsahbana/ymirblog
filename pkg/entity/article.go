@@ -14,3 +14,10 @@ type Article struct {
 	Title string `json:"title"`
 	Body  string `json:"body"`
 }
+
+type RequestGetArticles struct {
+	Title  *string
+	UserID *int
+	Limit  int `validate:"gte=0,default=10"`
+	Page   int `validate:"gte=0,default=1"`
+}

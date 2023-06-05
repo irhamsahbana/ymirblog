@@ -25,9 +25,27 @@ func (a *Article) Register(router chi.Router) {
 
 // GetAllArticle Handler
 func (a *Article) GetAllArticle(w http.ResponseWriter, r *http.Request) ([]*entity.Article, error) {
-	res, err := a.UcArticle.GetAll(r.Context())
+	var (
+		request entity.RequestGetArticles
+	)
+	b, err := rest.Bind(r, &request)
+	if err != nil {
+		return []*entity.Article{}, rest.ErrBadRequest(w, r, err)
+	}
+	if err := b.Validate(); err != nil {
+		return []*entity.Article{}, rest.ErrBadRequest(w, r, err)
+	}
+
+	res, metadata, err := a.UcArticle.GetAll(r.Context(), request)
 	if err != nil {
 		return []*entity.Article{}, err
 	}
+
+	rest.Paging(r, rest.Pagination{
+		Page:  metadata.Page,
+		Limit: metadata.Limit,
+		Total: metadata.Total,
+	})
+
 	return res, nil
 }
