@@ -10,11 +10,10 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-// GetAll returns resource pokemon api.
-func (i *impl) GetAll(ctx context.Context, request entity.RequestGetArticles) ([]*entity.Article, rest.Pagination, error) {
+// GetAll returns resource users.
+func (i *impl) GetAll(ctx context.Context, request entity.RequestGetArticles) (entity.ResponseGetArticles, error) {
 	span := trace.SpanFromContext(ctx)
 	defer span.End()
-	// l := log.Hook(tracer.TraceContextHook(ctx))
 
 	client := i.adapter.PersistYmirBlog
 	query := client.Article.Query()
@@ -30,7 +29,7 @@ func (i *impl) GetAll(ctx context.Context, request entity.RequestGetArticles) ([
 	// pagination
 	total, err := query.Count(ctx)
 	if err != nil {
-		return []*entity.Article{}, rest.Pagination{}, err
+		return entity.ResponseGetArticles{}, err
 	}
 	metadata := rest.Pagination{
 		Page:  request.Page,
@@ -44,17 +43,18 @@ func (i *impl) GetAll(ctx context.Context, request entity.RequestGetArticles) ([
 		Offset(offset).
 		All(ctx)
 	if err != nil {
-		return []*entity.Article{}, metadata, err
+		return entity.ResponseGetArticles{}, err
 	}
 
-	res := []*entity.Article{}
+	res := entity.ResponseGetArticles{}
 	for _, a := range items {
 		entityArticle := entity.Article{
 			Title: a.Title,
 			Body:  a.Body,
 		}
-		res = append(res, &entityArticle)
+		res.Items = append(res.Items, &entityArticle)
 	}
+	res.Metadata = metadata
 
-	return res, metadata, nil
+	return res, nil
 }

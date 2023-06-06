@@ -52,4 +52,3 @@ func TestWithYmirBlogMySQL(t *testing.T) {
 	is.Nil(adapter.UnSync())
 	is.Nil(mock.ExpectationsWereMet())
 }
-

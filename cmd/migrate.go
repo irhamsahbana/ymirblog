@@ -46,7 +46,7 @@ func newMigrateCmd() *cobra.Command {
 func (m *migrateOptions) Run(cmd *cobra.Command, _ []string) error {
 	switch m.Dialect {
 	case dialect.SQLite, dialect.MySQL:
-	    if err := ymirBlogSchema.SchemaMigrate(m.Name, Dialect(m.Dialect), m.DSN); err != nil {
+		if err := ymirBlogSchema.SchemaMigrate(m.Name, Dialect(m.Dialect), m.DSN); err != nil {
 			return err
 		}
 	default:

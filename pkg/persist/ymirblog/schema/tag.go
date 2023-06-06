@@ -22,5 +22,5 @@ func (Tag) Fields() []ent.Field {
 func (Tag) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("articles", Article.Type),
-	}	
+	}
 }

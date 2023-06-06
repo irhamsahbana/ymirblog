@@ -92,4 +92,3 @@ func WithYmirBlogMySQL(driver Driver[*sqlEnt.Driver]) Option {
 		a.YmirBlogMySQL = open
 	}
 }
-
