@@ -10,7 +10,6 @@ import (
 	"gitlab.playcourt.id/dedenurr12/ymirblog/pkg/adapters"
 	"gitlab.playcourt.id/dedenurr12/ymirblog/pkg/entity"
 	"gitlab.playcourt.id/dedenurr12/ymirblog/pkg/persist/ymirblog"
-	"gitlab.playcourt.id/dedenurr12/ymirblog/pkg/ports/rest"
 	"gitlab.playcourt.id/dedenurr12/ymirblog/pkg/usecase"
 )
 
@@ -26,7 +25,7 @@ func init() {
 
 // T is the interface implemented by all article Component implementations.
 type T interface {
-	GetAll(ctx context.Context, request entity.RequestGetArticles) ([]*entity.Article, rest.Pagination, error)
+	GetAll(ctx context.Context, request entity.RequestGetArticles) (entity.ResponseGetArticles, error)
 }
 
 type impl struct {

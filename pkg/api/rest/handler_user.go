@@ -2,14 +2,15 @@
 package rest
 
 import (
+	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/go-chi/chi/v5"
 
 	"gitlab.playcourt.id/dedenurr12/ymirblog/pkg/entity"
 	"gitlab.playcourt.id/dedenurr12/ymirblog/pkg/persist/ymirblog"
 	"gitlab.playcourt.id/dedenurr12/ymirblog/pkg/ports/rest"
-	"gitlab.playcourt.id/dedenurr12/ymirblog/pkg/shared/tracer"
 	"gitlab.playcourt.id/dedenurr12/ymirblog/pkg/usecase/user"
 )
 
@@ -21,23 +22,16 @@ type User struct {
 
 // Register is endpoint group for handler.
 func (u *User) Register(router chi.Router) {
-	// PLEASE EDIT THIS EXAMPLE, how to register handler to router
-	router.Get("/hello", rest.HandlerAdapter(u.User).JSON)
-	router.Get("/hello-csv", rest.HandlerAdapter(u.UserCSV).CSV)
-
-	// create handler for create user POST
-	router.Post("/user/create", rest.HandlerAdapter(u.CreateUser).JSON)
-}
-
-// ResponseUser User handler response. /** PLEASE EDIT THIS EXAMPLE, return handler response */.
-type ResponseUser struct {
-	Message string
-	User    entity.User
+	// create handler for user
+	router.Post("/users", rest.HandlerAdapter(u.CreateUser).JSON)
+	router.Patch("/users/{id}", rest.HandlerAdapter(u.UpdateUser).JSON)
+	router.Get("/users", rest.HandlerAdapter(u.GetAllUser).JSON)
+	router.Get("/users/{id}", rest.HandlerAdapter(u.GetUserID).JSON)
+	router.Delete("/users/{id}", rest.HandlerAdapter(u.DeleteUser).JSON)
 }
 
 // Create User handler
 func (u *User) CreateUser(w http.ResponseWriter, r *http.Request) (ResponseUser, error) {
-
 	request := entity.User{}
 	b, err := rest.Bind[entity.User](r, &request)
 	if err != nil {
@@ -57,37 +51,86 @@ func (u *User) CreateUser(w http.ResponseWriter, r *http.Request) (ResponseUser,
 
 	return ResponseUser{
 		Message: "success",
-		User:    user,
+		User:    &user,
 	}, nil
-
 }
 
-// User endpoint func. /** PLEASE EDIT THIS EXAMPLE, return handler response */.
-func (u *User) User(w http.ResponseWriter, r *http.Request) (ResponseUser, error) {
-	_, span, l := tracer.StartSpanLogTrace(r.Context(), "User")
-	defer span.End()
+// Update User Handler
+func (u *User) UpdateUser(w http.ResponseWriter, r *http.Request) (ResponseUser, error) {
+	//update user
+	ID := chi.URLParam(r, "id")
+	id, _ := strconv.Atoi(ID)
 
-	l.Info().Str("Hello", "World").Msg("this")
+	request := RequestUser{}
+	b, err := rest.Bind(r, &request)
+	fmt.Println(err)
+	if err != nil {
+		return ResponseUser{}, rest.ErrBadRequest(w, r, err)
+	}
+	if err = b.Validate(); err != nil {
+		return ResponseUser{}, rest.ErrBadRequest(w, r, err)
+	}
+
+	entityUpdateUser := entity.User{
+		Name:  request.Name,
+		Email: request.Email,
+	}
+
+	userUpdate, err := u.UserUsecase.UpdateUser(r.Context(), id, entityUpdateUser)
+	if err != nil {
+		return ResponseUser{
+			Message: err.Error(),
+		}, rest.ErrBadRequest(w, r, err)
+	}
 
 	return ResponseUser{
-		Message: "Hello everybody",
+		Message: "success",
+		User:    &userUpdate,
 	}, nil
 }
 
-// UserCSV endpoint func. /** PLEASE EDIT THIS EXAMPLE, return handler response */.
-func (u *User) UserCSV(w http.ResponseWriter, r *http.Request) (rest.ResponseCSV, error) {
-	_, span, l := tracer.StartSpanLogTrace(r.Context(), "UserCSV")
-	defer span.End()
+// GetAllArticle Handler
+func (u *User) GetAllUser(w http.ResponseWriter, r *http.Request) (ResponseUser, error) {
+	users, err := u.UserUsecase.GetAllUser(r.Context())
+	if err != nil {
+		return ResponseUser{}, err
+	}
 
-	l.Info().Str("Hello", "World").Msg("this")
+	return ResponseUser{
+		Message: "succes",
+		Users:   users,
+	}, nil
+}
 
-	rows := make([][]string, 0)
-	rows = append(rows, []string{"SO Number", "Nama Warung", "Area", "Fleet Number", "Jarak Warehouse", "Urutan"})
-	rows = append(rows, []string{"SO45678", "WPD00011", "Jakarta Selatan", "1", "45.00", "1"})
-	rows = append(rows, []string{"SO45645", "WPD001123", "Jakarta Selatan", "1", "43.00", "2"})
-	rows = append(rows, []string{"SO45645", "WPD003343", "Jakarta Selatan", "1", "43.00", "3"})
-	return rest.ResponseCSV{
-		Filename: "warehouse",
-		Rows:     rows,
+func (u *User) GetUserID(w http.ResponseWriter, r *http.Request) (ResponseUser, error) {
+	ID := chi.URLParam(r, "id")
+	id, _ := strconv.Atoi(ID)
+
+	userID, err := u.UserUsecase.GetUserID(r.Context(), id)
+	if err != nil {
+		return ResponseUser{
+			Message: err.Error(),
+		}, rest.ErrBadRequest(w, r, err)
+	}
+
+	return ResponseUser{
+		Message: "success",
+		User:    &userID,
+	}, nil
+}
+
+func (u *User) DeleteUser(w http.ResponseWriter, r *http.Request) (ResponseUser, error) {
+	ID := chi.URLParam(r, "id")
+	id, _ := strconv.Atoi(ID)
+
+	err := u.UserUsecase.DeleteUser(r.Context(), id)
+	if err != nil {
+		return ResponseUser{
+			Message: err.Error(),
+		}, rest.ErrBadRequest(w, r, err)
+	}
+
+	return ResponseUser{
+		Message: "success",
 	}, nil
 }

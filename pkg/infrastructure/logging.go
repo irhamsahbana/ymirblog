@@ -9,7 +9,7 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
-    "gitlab.playcourt.id/dedenurr12/ymirblog/pkg/shared/tracer"
+	"gitlab.playcourt.id/dedenurr12/ymirblog/pkg/shared/tracer"
 )
 
 // InitializeLogger will set logging format.

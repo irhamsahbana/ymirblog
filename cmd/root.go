@@ -68,7 +68,7 @@ func (r *rootOptions) runServer(_ *cobra.Command, _ []string) error {
 	infrastructure.InitializeLogger()
 	info := color.New(color.BgBlack, color.FgRed).SprintFunc()
 	fmt.Printf("%s\n", info(fmt.Sprintf(logo,
-	    version.GetVersion().VersionNumber(),
+		version.GetVersion().VersionNumber(),
 		infrastructure.Envs.Ports.HTTP,
 	)))
 	log.Info().Str("Stage", infrastructure.Envs.App.Environment).Msg("server running...")
@@ -107,7 +107,7 @@ func (r *rootOptions) runServer(_ *cobra.Command, _ []string) error {
 	}
 	/**
 	* Initialize Main
-	*/
+	 */
 	d := infrastructure.Envs.YmirBlogMySQL
 		adaptor := &adapters.Adapter{}
 		adaptor.Sync(
@@ -132,38 +132,37 @@ func (r *rootOptions) runServer(_ *cobra.Command, _ []string) error {
 
 	adaptor.PersistYmirBlog = dbYmirBlog
 
-
-	// create usercase instance 
+	// create usercase instance
 	userUsecase, err := usercase.Get[usecaseUser.T](adaptor)
 	if err != nil {
 		return err
 	}
 
-	// create usercase instance 
+	// create usercase instance
 	articleUsecase, err := usercase.Get[usecaseArticle.T](adaptor)
 	if err != nil {
 		return err
 	}
 
-    var errCh chan error
+	var errCh chan error
 	/**
 	* Initialize HTTP
-	*/
+	 */
 	h := rest.NewServer(
 		rest.WithPort(strconv.Itoa(infrastructure.Envs.Ports.HTTP)),
 	)
 	h.Handler(rest.Routes().Register(
 		func(c chi.Router) http.Handler {
-		    // http register handler
+			// http register handler
 			restMI := &restApi.User{
 				UserUsecase: userUsecase,
-				DB: dbYmirBlog,
+				DB:          dbYmirBlog,
 			}
 			restMI.Register(c)
 
 			restArticle := &restApi.Article{
 				UcArticle: articleUsecase,
-				DB: dbYmirBlog,
+				DB:        dbYmirBlog,
 			}
 			restArticle.Register(c)
 
@@ -180,12 +179,12 @@ func (r *rootOptions) runServer(_ *cobra.Command, _ []string) error {
 		log.Info().Dur("timeout", infrastructure.Envs.Server.Timeout).Msg("Shutting down HTTP/HTTPS server")
 		// open-telemetry
 		if infrastructure.Envs.Telemetry.CollectorEnable {
-            if err := cleanupTracer(context.Background()); err != nil {
-                log.Error().Err(err).Msg("tracer provider server is failed shutdown")
-            }
-            if err := cleanupMetric(context.Background()); err != nil {
-                log.Error().Err(err).Msg("metric provider server is failed shutdown")
-            }
+			if err := cleanupTracer(context.Background()); err != nil {
+				log.Error().Err(err).Msg("tracer provider server is failed shutdown")
+			}
+			if err := cleanupMetric(context.Background()); err != nil {
+				log.Error().Err(err).Msg("metric provider server is failed shutdown")
+			}
 		}
 		// rest
 		if err := h.Quite(context.Background()); err != nil {
