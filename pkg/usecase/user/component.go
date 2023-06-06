@@ -23,6 +23,7 @@ func init() {
 // T is the interface implemented by all user Component implementations.
 type T interface {
 	CreateUser(ctx context.Context, newUser entity.User) (entity.User, error)
+	GetUserID(ctx context.Context, ID int) (entity.User, error)
 }
 
 type impl struct {

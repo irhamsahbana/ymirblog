@@ -191,9 +191,9 @@ func (e *Response[R]) CSV(w http.ResponseWriter, r *http.Request) {
 
 // Paging send a Pagination data.
 func Paging(r *http.Request, p Pagination) {
-    if p.Limit > 0 {
-        p.Size = int(math.Round(float64(p.Total) / float64(p.Limit)))
-    }
+	if p.Limit > 0 {
+		p.Size = int(math.Round(float64(p.Total) / float64(p.Limit)))
+	}
 	*r = *r.WithContext(context.WithValue(r.Context(), CtxPagination, p))
 }
 

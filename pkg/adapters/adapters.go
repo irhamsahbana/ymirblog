@@ -26,7 +26,7 @@ type Driver[T client] interface {
 
 // Adapter components for external sources.
 type Adapter struct {
-	YmirBlogMySQL *sql.Driver
+	YmirBlogMySQL   *sql.Driver
 	PersistYmirBlog *ymirblog.Database
 }
 

@@ -11,6 +11,14 @@ type Resource struct {
 
 // Result is a resource list result.
 type Article struct {
+	ID    int    `json:"id"`
 	Title string `json:"title"`
 	Body  string `json:"body"`
+	User  *User  `json:"user,omitempty"`
+	Tags  []Tag  `json:"tags"`
+}
+
+type Tag struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
 }
