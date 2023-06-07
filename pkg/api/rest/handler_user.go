@@ -9,7 +9,6 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"gitlab.playcourt.id/dedenurr12/ymirblog/pkg/entity"
-	"gitlab.playcourt.id/dedenurr12/ymirblog/pkg/persist/ymirblog"
 	"gitlab.playcourt.id/dedenurr12/ymirblog/pkg/ports/rest"
 	"gitlab.playcourt.id/dedenurr12/ymirblog/pkg/usecase/user"
 )
@@ -17,7 +16,6 @@ import (
 // User handler instance data.
 type User struct {
 	UserUsecase user.T
-	DB          *ymirblog.Database
 }
 
 // Register is endpoint group for handler.

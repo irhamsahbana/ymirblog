@@ -154,17 +154,14 @@ func (r *rootOptions) runServer(_ *cobra.Command, _ []string) error {
 	h.Handler(rest.Routes().Register(
 		func(c chi.Router) http.Handler {
 			// http register handler
-			// http register handler
 			restMI := &restApi.User{
 				UserUsecase: userUsecase,
-				DB:          dbYmirBlog,
 			}
 			restMI.Register(c)
 
 			restArticle := &restApi.Article{
 				UcArticle: articleUsecase,
 				UcUser:    userUsecase,
-				DB:        dbYmirBlog,
 			}
 			restArticle.Register(c)
 

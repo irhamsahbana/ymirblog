@@ -9,7 +9,6 @@ import (
 	"github.com/rs/zerolog/log"
 
 	"gitlab.playcourt.id/dedenurr12/ymirblog/pkg/entity"
-	"gitlab.playcourt.id/dedenurr12/ymirblog/pkg/persist/ymirblog"
 	"gitlab.playcourt.id/dedenurr12/ymirblog/pkg/ports/rest"
 	"gitlab.playcourt.id/dedenurr12/ymirblog/pkg/usecase/article"
 	"gitlab.playcourt.id/dedenurr12/ymirblog/pkg/usecase/user"
@@ -19,7 +18,6 @@ import (
 type Article struct {
 	UcArticle article.T
 	UcUser    user.T
-	DB        *ymirblog.Database
 }
 
 // Register is endpoint group for handler.
