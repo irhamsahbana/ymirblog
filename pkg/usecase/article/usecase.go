@@ -2,7 +2,6 @@ package article
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/rs/zerolog/log"
 	"gitlab.playcourt.id/dedenurr12/ymirblog/pkg/entity"
@@ -108,93 +107,95 @@ func (i *impl) Create(ctx context.Context, e entity.Article) (entity.Article, er
 	defer span.End()
 	l := log.Hook(tracer.TraceContextHook(ctx))
 
-	// start transaction
 	client := i.adapter.PersistYmirBlog
-	tx, err := client.Tx(ctx)
-	if err != nil {
-		return e, fmt.Errorf("starting a transaction: %w", err)
-	}
+	res := &e
 
-	// create entity article, with user id
-	eDB, err := tx.Article.Create().
-		SetTitle(e.Title).
-		SetBody(e.Body).
-		SetUserID(e.User.ID).
-		Save(ctx)
-	if err != nil {
-		l.Error().Err(err).Msg("Create")
-		return e, rollback(tx, err)
-	}
-
-	// create entity tag
-	for _, t := range e.Tags {
-		findTag, err := tx.Tag.Query().Where(
-			tag.Name(t.Name),
-		).First(ctx)
-
+	if err := client.WithTransaction(ctx, func(ctx context.Context, tx *ent.Tx) error {
+		// create entity article, with user id
+		eDB, err := tx.Article.Create().
+			SetTitle(e.Title).
+			SetBody(e.Body).
+			SetUserID(e.User.ID).
+			Save(ctx)
 		if err != nil {
-			if ent.IsNotFound(err) { // if tag not found, create new tag and add to article
-				tagDB, err := tx.Tag.Create().
-					SetName(t.Name).
-					Save(ctx)
-				if err != nil {
-					l.Error().Err(err).Msg("Create")
-					return e, rollback(tx, err)
-				}
+			l.Error().Err(err).Msg("Create")
+			return err
+		}
 
+		// create entity tag
+		for _, t := range e.Tags {
+			findTag, err := tx.Tag.Query().Where(
+				tag.Name(t.Name),
+			).First(ctx)
+
+			if err != nil {
+				if ent.IsNotFound(err) { // if tag not found, create new tag and add to article
+					tagDB, err := tx.Tag.Create().
+						SetName(t.Name).
+						Save(ctx)
+					if err != nil {
+						l.Error().Err(err).Msg("Create")
+						return err
+					}
+
+					_, err = tx.Article.UpdateOneID(eDB.ID).
+						AddTags(tagDB).
+						Save(ctx)
+					if err != nil {
+						l.Error().Err(err).Msg("Create")
+						return err
+					}
+				} else { // if error is not found error, rollback
+					l.Error().Err(err).Msg("Create")
+					return err
+				}
+			} else { // if tag found in DB, add tag to article
 				_, err = tx.Article.UpdateOneID(eDB.ID).
-					AddTags(tagDB).
+					AddTags(findTag).
 					Save(ctx)
 				if err != nil {
 					l.Error().Err(err).Msg("Create")
-					return e, rollback(tx, err)
+					return err
 				}
-			} else { // if error is not found error, rollback
-				l.Error().Err(err).Msg("Create")
-				return e, rollback(tx, err)
-			}
-		} else { // if tag found in DB, add tag to article
-			_, err = tx.Article.UpdateOneID(eDB.ID).
-				AddTags(findTag).
-				Save(ctx)
-			if err != nil {
-				l.Error().Err(err).Msg("Create")
-				return e, rollback(tx, err)
 			}
 		}
-	}
 
-	// commit transaction
-	if err = tx.Commit(); err != nil {
-		l.Error().Err(err).Msg("Create")
-		return e, rollback(tx, err)
-	}
+		// find article with tags
+		eDB, err = tx.Article.Query().
+			Where(
+				article.ID(eDB.ID),
+			).
+			WithTags().
+			WithUser().
+			First(ctx)
+		if err != nil {
+			l.Error().Err(err).Msg("Create")
+			return err
+		}
 
-	// find article with tags
-	eDB, err = client.Article.Query().
-		Where(
-			article.ID(eDB.ID),
-		).
-		WithTags().
-		First(ctx)
-	if err != nil {
-		l.Error().Err(err).Msg("Create")
+		// convert to entity
+		res.ID = eDB.ID
+		res.Title = eDB.Title
+		res.Body = eDB.Body
+		res.Tags = []entity.Tag{}
+		for _, t := range eDB.Edges.Tags {
+			res.Tags = append(res.Tags, entity.Tag{
+				ID:   t.ID,
+				Name: t.Name,
+			})
+		}
+		res.User = &entity.User{
+			ID:    eDB.Edges.User.ID,
+			Name:  eDB.Edges.User.Name,
+			Email: eDB.Edges.User.Email,
+		}
+
+		return nil
+	}); err != nil {
 		return e, err
 	}
 
-	// convert to entity
-	e.ID = eDB.ID
-	e.Title = eDB.Title
-	e.Body = eDB.Body
-	e.Tags = []entity.Tag{}
-	for _, t := range eDB.Edges.Tags {
-		e.Tags = append(e.Tags, entity.Tag{
-			ID:   t.ID,
-			Name: t.Name,
-		})
-	}
-
-	return e, nil
+	return *res, nil
 }
 
 // Delete returns resource article api.
@@ -221,101 +222,88 @@ func (i *impl) Update(ctx context.Context, id int, e entity.Article) (entity.Art
 	l := log.Hook(tracer.TraceContextHook(ctx))
 
 	client := i.adapter.PersistYmirBlog
-	tx, err := client.Tx(ctx)
-	if err != nil {
-		return e, fmt.Errorf("starting a transaction: %w", err)
-	}
+	res := &entity.Article{}
 
-	a, err := tx.Article.UpdateOneID(id).
-		SetUserID(e.User.ID).
-		SetTitle(e.Title).
-		SetBody(e.Body).
-		ClearTags().
-		Save(ctx)
-	if err != nil {
-		l.Error().Err(err).Msg("Update")
-		return e, err
-	}
-
-	e.ID = a.ID
-	e.Title = a.Title
-	e.Body = a.Body
-
-	// create entity tag
-	for _, t := range e.Tags {
-		findTag, err := tx.Tag.Query().Where(
-			tag.Name(t.Name),
-		).First(ctx)
-
+	// start transaction
+	if err := client.WithTransaction(ctx, func(ctx context.Context, tx *ent.Tx) error {
+		a, err := tx.Article.UpdateOneID(id).
+			SetUserID(e.User.ID).
+			SetTitle(e.Title).
+			SetBody(e.Body).
+			ClearTags().
+			Save(ctx)
 		if err != nil {
-			if ent.IsNotFound(err) { // if tag not found, create new tag and add to article
-				_, err := tx.Tag.Create().
-					SetName(t.Name).
-					AddArticles(a).
+			l.Error().Err(err).Msg("Update")
+			return err
+		}
+
+		// create entity tag
+		for _, t := range e.Tags {
+			findTag, err := tx.Tag.Query().Where(
+				tag.Name(t.Name),
+			).First(ctx)
+
+			if err != nil {
+				if ent.IsNotFound(err) { // if tag not found, create new tag and add to article
+					_, err := tx.Tag.Create().
+						SetName(t.Name).
+						AddArticles(a).
+						Save(ctx)
+					if err != nil {
+						l.Error().Err(err).Msg("Update")
+						return err
+					}
+				} else { // if error is not found error, rollback
+					l.Error().Err(err).Msg("Update")
+					return err
+				}
+			} else { // if tag found in DB, add tag to article
+				_, err = tx.Article.UpdateOneID(a.ID).
+					AddTags(findTag).
 					Save(ctx)
 				if err != nil {
 					l.Error().Err(err).Msg("Update")
-					return e, rollback(tx, err)
+					return err
 				}
-			} else { // if error is not found error, rollback
-				l.Error().Err(err).Msg("Update")
-				return e, rollback(tx, err)
-			}
-		} else { // if tag found in DB, add tag to article
-			_, err = tx.Article.UpdateOneID(a.ID).
-				AddTags(findTag).
-				Save(ctx)
-			if err != nil {
-				l.Error().Err(err).Msg("Update")
-				return e, rollback(tx, err)
 			}
 		}
-	}
 
-	// commit transaction
-	if err = tx.Commit(); err != nil {
-		l.Error().Err(err).Msg("Update")
-		return e, rollback(tx, err)
-	}
+		// find article with tags
+		aDB, err := tx.Article.Query().
+			Where(
+				article.ID(id),
+			).
+			WithTags().
+			WithUser().
+			First(ctx)
+		if err != nil {
+			l.Error().Err(err).Msg("Update")
+			return err
+		}
 
-	// find article with tags
-	aDB, err := client.Article.Query().
-		Where(
-			article.ID(a.ID),
-		).
-		WithTags().
-		WithUser().
-		First(ctx)
-	if err != nil {
-		l.Error().Err(err).Msg("Update")
+		// convert to entity
+		res.ID = aDB.ID
+		res.Title = aDB.Title
+		res.Body = aDB.Body
+
+		res.Tags = []entity.Tag{}
+		for _, t := range aDB.Edges.Tags {
+			res.Tags = append(res.Tags, entity.Tag{
+				ID:   t.ID,
+				Name: t.Name,
+			})
+		}
+
+		res.User = &entity.User{
+			ID:    aDB.Edges.User.ID,
+			Name:  aDB.Edges.User.Name,
+			Email: aDB.Edges.User.Email,
+		}
+
+		return nil
+	}); err != nil {
 		return e, err
 	}
 
-	// convert to entity
-	e.ID = aDB.ID
-	e.Title = aDB.Title
-	e.Body = aDB.Body
-
-	e.Tags = []entity.Tag{}
-	for _, t := range aDB.Edges.Tags {
-		e.Tags = append(e.Tags, entity.Tag{
-			ID:   t.ID,
-			Name: t.Name,
-		})
-	}
-
-	e.User = &entity.User{
-		ID:    aDB.Edges.User.ID,
-		Name:  aDB.Edges.User.Name,
-		Email: aDB.Edges.User.Email,
-	}
-
-	return e, nil
-}
-
-func rollback(tx *ent.Tx, err error) error {
-	if rerr := tx.Rollback(); rerr != nil {
-		err = fmt.Errorf("%w: %v", err, rerr)
-	}
-	return err
+	return *res, nil
 }
