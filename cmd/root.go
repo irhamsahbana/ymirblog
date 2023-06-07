@@ -107,7 +107,7 @@ func (r *rootOptions) runServer(_ *cobra.Command, _ []string) error {
 	}
 	/**
 	* Initialize Main
-	  */
+	 */
 	d := infrastructure.Envs.YmirBlogMySQL
 	adaptor := &adapters.Adapter{}
 	adaptor.Sync(
@@ -120,9 +120,9 @@ func (r *rootOptions) runServer(_ *cobra.Command, _ []string) error {
 				Port:     d.Port,
 			},
 		}),
-			usecaseUser.WithYmirBlogPersist(),
-			usecaseArticle.WithYmirBlogPersist(),
-			) // adapters init
+		usecaseUser.WithYmirBlogPersist(),
+		usecaseArticle.WithYmirBlogPersist(),
+	) // adapters init
 
 	// create persistance instance
 	dbYmirBlog := ymirblog.Driver(
@@ -157,14 +157,14 @@ func (r *rootOptions) runServer(_ *cobra.Command, _ []string) error {
 			// http register handler
 			restMI := &restApi.User{
 				UserUsecase: userUsecase,
-				DB:                   dbYmirBlog,
+				DB:          dbYmirBlog,
 			}
 			restMI.Register(c)
 
 			restArticle := &restApi.Article{
 				UcArticle: articleUsecase,
 				UcUser:    userUsecase,
-				DB:               dbYmirBlog,
+				DB:        dbYmirBlog,
 			}
 			restArticle.Register(c)
 
