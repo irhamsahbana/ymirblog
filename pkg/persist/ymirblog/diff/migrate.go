@@ -36,12 +36,12 @@ func SchemaMigrate(name, dialect, dsn string) error {
 	}
 	// Migrate diff options.
 	opts := []schema.MigrateOption{
-		schema.WithDir(dir),                         // provide migration directory
-		schema.WithMigrationMode(schema.ModeReplay), // provide migration mode
-		schema.WithDialect(shared.Dialect(dialect)), // Ent dialect to use
-		schema.WithFormatter(atlas.DefaultFormatter),
-		schema.WithDropIndex(true),
-		schema.WithDropColumn(true),
+        schema.WithDir(dir),                          // provide migration directory
+        schema.WithMigrationMode(schema.ModeInspect), // provide migration mode
+        schema.WithDialect(shared.Dialect(dialect)),  // Ent dialect to use
+        schema.WithFormatter(atlas.DefaultFormatter),
+        schema.WithDropIndex(true),
+        schema.WithDropColumn(true),
 	}
 
 	// Generate migrations using Atlas support for mysql, postgres and sqlite (note the Ent dialect option passed above).
