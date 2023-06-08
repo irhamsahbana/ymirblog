@@ -26,6 +26,10 @@ func init() {
 // T is the interface implemented by all article Component implementations.
 type T interface {
 	GetAll(ctx context.Context, request entity.RequestGetArticles) (entity.ResponseGetArticles, error)
+	GetByID(ctx context.Context, id int) (entity.Article, error)
+	Create(ctx context.Context, e entity.Article) (entity.Article, error)
+	Delete(ctx context.Context, id int) error
+	Update(ctx context.Context, id int, e entity.Article) (entity.Article, error)
 }
 
 type impl struct {

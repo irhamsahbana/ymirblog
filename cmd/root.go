@@ -24,7 +24,7 @@ import (
 	"gitlab.playcourt.id/dedenurr12/ymirblog/pkg/persist/ymirblog"
 	"gitlab.playcourt.id/dedenurr12/ymirblog/pkg/ports/rest"
 	"gitlab.playcourt.id/dedenurr12/ymirblog/pkg/shared"
-	usercase "gitlab.playcourt.id/dedenurr12/ymirblog/pkg/usecase"
+	"gitlab.playcourt.id/dedenurr12/ymirblog/pkg/usecase"
 	usecaseArticle "gitlab.playcourt.id/dedenurr12/ymirblog/pkg/usecase/article"
 	usecaseUser "gitlab.playcourt.id/dedenurr12/ymirblog/pkg/usecase/user"
 	"gitlab.playcourt.id/dedenurr12/ymirblog/pkg/version"
@@ -109,20 +109,20 @@ func (r *rootOptions) runServer(_ *cobra.Command, _ []string) error {
 	* Initialize Main
 	 */
 	d := infrastructure.Envs.YmirBlogMySQL
-		adaptor := &adapters.Adapter{}
-		adaptor.Sync(
-			adapters.WithYmirBlogMySQL(&adapters.YmirBlogMySQL{
-				NetworkDB: adapters.NetworkDB{
-					Database: d.Database,
-					User:d.User,
-					Password: d.Password,
-					Host: d.Host,
-					Port: d.Port,
-				},
-			}),
-			usecaseUser.WithYmirBlogPersist(),
-			usecaseArticle.WithYmirBlogPersist(),
-			) // adapters init
+	adaptor := &adapters.Adapter{}
+	adaptor.Sync(
+		adapters.WithYmirBlogMySQL(&adapters.YmirBlogMySQL{
+			NetworkDB: adapters.NetworkDB{
+				Database: d.Database,
+				User:     d.User,
+				Password: d.Password,
+				Host:     d.Host,
+				Port:     d.Port,
+			},
+		}),
+		usecaseUser.WithYmirBlogPersist(),
+		usecaseArticle.WithYmirBlogPersist(),
+	) // adapters init
 
 	// create persistance instance
 	dbYmirBlog := ymirblog.Driver(
@@ -133,13 +133,13 @@ func (r *rootOptions) runServer(_ *cobra.Command, _ []string) error {
 	adaptor.PersistYmirBlog = dbYmirBlog
 
 	// create usercase instance
-	userUsecase, err := usercase.Get[usecaseUser.T](adaptor)
+	userUsecase, err := usecase.Get[usecaseUser.T](adaptor)
 	if err != nil {
 		return err
 	}
 
 	// create usercase instance
-	articleUsecase, err := usercase.Get[usecaseArticle.T](adaptor)
+	articleUsecase, err := usecase.Get[usecaseArticle.T](adaptor)
 	if err != nil {
 		return err
 	}
@@ -156,13 +156,12 @@ func (r *rootOptions) runServer(_ *cobra.Command, _ []string) error {
 			// http register handler
 			restMI := &restApi.User{
 				UserUsecase: userUsecase,
-				DB:          dbYmirBlog,
 			}
 			restMI.Register(c)
 
 			restArticle := &restApi.Article{
 				UcArticle: articleUsecase,
-				DB:        dbYmirBlog,
+				UcUser:    userUsecase,
 			}
 			restArticle.Register(c)
 
